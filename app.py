@@ -2,6 +2,21 @@ from playwright.sync_api import sync_playwright
 import time
 import random
 import string
+import asyncio
+import requests
+import re
+from playwright.async_api import async_playwright
+
+def user():
+    cararc = string.ascii_letters
+
+    user = [random.choice(cararc)]
+
+    while len(user) < 6:
+        user.append(random.choice(cararc))
+    random.shuffle(user)
+    return "".join(user)
+        
 
 
 def contra():
@@ -24,6 +39,17 @@ def contra():
     return "".join(contra)
 
 
+
+BASE_URL = "https://api.mail.tm"
+domain_names = requests.get(f"{BASE_URL}/domains").json()
+domain = domain_names['hydra:member'][0]['domain']
+
+user = "use3659085"
+email = f"{user}@{domain}"
+passw = "Pass123"
+
+
+
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
 
@@ -37,6 +63,8 @@ with sync_playwright() as p:
     for page in pages:
         page.wait_for_selector("#cc-accept")
         page.click("#cc-accept")
+
+
 
         page.fill(".css-9xm6po", "use3659085@airsworld.net") # VALORE EMAIL
         page.click(".css-f58z5q")
