@@ -40,13 +40,6 @@ def contra():
 
 
 
-BASE_URL = "https://api.mail.tm"
-domain_names = requests.get(f"{BASE_URL}/domains").json()
-domain = domain_names['hydra:member'][0]['domain']
-
-user = "use3659085"
-email = f"{user}@{domain}"
-passw = "Pass123"
 
 
 
