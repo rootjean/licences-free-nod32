@@ -1,36 +1,31 @@
-from playwright.sync_api import sync_playwright
-import time
 import random
 import string
-import asyncio
 from playwright.async_api import async_playwright
-
-from mailtemp import confirmado_event,crear_email_temporal, confirmar_cuenta
-
-
+from mailtemp import confirmado_event
 
 def generar_usuario():
-    return "".join(random.choice(string.digits) for _ in range(5))
+    return "".join(random.choices(string.digits, k=5))
 
 
 def generar_password():
-    mayus = string.ascii_uppercase
-    minus = string.ascii_lowercase
-    nums = string.digits
-    esp = "!@#$%^&*()_+-=[]{}|;:,.<>?/"
+    chars = {
+        "mayus": string.ascii_uppercase,
+        "minus": string.ascii_lowercase,
+        "nums": string.digits,
+        "esp": "!@#$%^&*()_+-=[]{}|;:,.<>?/"
+    }
 
     password = [
-        random.choice(mayus),
-        random.choice(minus),
-        random.choice(nums),
-        random.choice(esp),
+        random.choice(chars["mayus"]),
+        random.choice(chars["minus"]),
+        random.choice(chars["nums"]),
+        random.choice(chars["esp"]),
     ]
 
-    all_chars = mayus + minus + nums + esp
-    while len(password) < 12:
-        password.append(random.choice(all_chars))
-
+    all_chars = "".join(chars.values())
+    password.extend(random.choices(all_chars, k=12 - len(password)))
     random.shuffle(password)
+
     return "".join(password)
 
 
@@ -41,66 +36,62 @@ async def registrar_cuenta(email, password):
 
         await page.goto("https://login.eset.com/register")
 
-        await page.wait_for_selector("#cc-accept")
-        await page.click("#cc-accept")
+        await page.locator("#cc-accept").click()
+        await page.locator(".css-9xm6po").fill(email)
+        await page.locator(".css-f58z5q").click()
 
-        await page.fill(".css-9xm6po", email)
-        await page.click(".css-f58z5q")
-
-        await page.fill("#password", password)
-        await page.click(".css-6rqqax")
-        await page.click(".css-f58z5q")
+        await page.locator("#password").fill(password)
+        await page.locator(".css-6rqqax").click()
+        await page.locator(".css-f58z5q").click()
 
         print("Esperando confirmación...")
         await confirmado_event.wait()
 
-        await acciones_post_confirmacion(page)
+        clave = await acciones_post_confirmacion(page)
+        print(f"Clave =========> {clave}")
 
-        while True:
-            await asyncio.sleep(1)
+        await browser.close()
+
 
 
 async def acciones_post_confirmacion(page):
-    await page.wait_for_selector(".css-owa58g")
-    await page.click(".css-owa58g")
+    btn_next = page.locator(".css-f58z5q")
 
-    await page.wait_for_selector(".css-klw4i7")
-    await page.click('label[for="trial"]')
-    await page.click(".css-f58z5q")
-    
-    await page.wait_for_selector(".css-1n3hg2q")
-    await page.click('label[for="148"]')
-    await page.click(".css-f58z5q")
-    
-    await page.wait_for_selector(".css-f58z5q")
-    await page.click(".css-f58z5q")
+    await page.locator(".css-owa58g").click()
 
-    await page.fill(".css-9xm6po", "JuanPedro")
-    await page.click(".css-f58z5q")
+    await page.locator('label[for="trial"]').click()
+    await btn_next.click()
 
-    await page.wait_for_selector(".css-c2hiim")
-    await page.click(".css-f58z5q")
+    await page.locator('label[for="148"]').click()
+    await btn_next.click()
 
-    await page.wait_for_selector(".css-1n3hg2q")
-    await page.click('label[for="1"]')
-    await page.click(".css-f58z5q")
-    
-    await page.wait_for_selector(".css-owa58g")
-    await page.click(".css-owa58g")  
+    await btn_next.click()
 
-    await page.wait_for_selector('button[data-label="dashboard-subscriptions-card-button"]')
-    await page.click('button[data-label="dashboard-subscriptions-card-button"]')
+    await page.locator('input[name="name"]').fill("JuanPedro")
+    await btn_next.click()
 
-    await page.click(".css-f58z5q")
+    await btn_next.click()
+
+    await page.locator('label[for="1"]').click()
+    await btn_next.click()
+
+    await page.locator(".css-owa58g").click()
+
+    await page.locator(
+        'button[data-label="dashboard-subscriptions-card-button"]'
+    ).click()
+
+    await btn_next.click()
 
     clave_locator = page.locator(
         'div[data-label="license-detail-license-key"] p'
     )
 
     await clave_locator.wait_for()
-    clave = await clave_locator.inner_text()
+    return await clave_locator.inner_text()
 
-    print(clave)
+
+
 
 
 
