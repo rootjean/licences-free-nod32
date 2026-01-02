@@ -3,7 +3,9 @@ import time
 import random
 import string
 import asyncio
-from mailtemp import crear_email_temporal, confirmar_cuenta
+from playwright.async_api import async_playwright
+
+from mailtemp import confirmado_event,crear_email_temporal, confirmar_cuenta
 
 
 
@@ -32,26 +34,73 @@ def generar_password():
     return "".join(password)
 
 
-def registrar_cuenta(email, password):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        page = browser.new_page()
+async def registrar_cuenta(email, password):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        page = await browser.new_page()
 
-        page.goto("https://login.eset.com/register")
+        await page.goto("https://login.eset.com/register")
 
-        page.wait_for_selector("#cc-accept")
-        page.click("#cc-accept")
+        await page.wait_for_selector("#cc-accept")
+        await page.click("#cc-accept")
 
-        page.fill(".css-9xm6po", email)
-        page.click(".css-f58z5q")
+        await page.fill(".css-9xm6po", email)
+        await page.click(".css-f58z5q")
 
-        page.fill("#password", password)
-        page.click(".css-6rqqax")
-        page.click(".css-f58z5q")
+        await page.fill("#password", password)
+        await page.click(".css-6rqqax")
+        await page.click(".css-f58z5q")
+
+        print("Esperando confirmación...")
+        await confirmado_event.wait()
+
+        await acciones_post_confirmacion(page)
+
+        while True:
+            await asyncio.sleep(1)
 
 
-        #page_mail = browser.new_page()
-        #page_mail.goto("https://mail.tm/es/")
+async def acciones_post_confirmacion(page):
+    await page.wait_for_selector(".css-owa58g")
+    await page.click(".css-owa58g")
 
-        time.sleep(2)
-        #browser.close()
+    await page.wait_for_selector(".css-klw4i7")
+    await page.click('label[for="trial"]')
+    await page.click(".css-f58z5q")
+    
+    await page.wait_for_selector(".css-1n3hg2q")
+    await page.click('label[for="148"]')
+    await page.click(".css-f58z5q")
+    
+    await page.wait_for_selector(".css-f58z5q")
+    await page.click(".css-f58z5q")
+
+    await page.fill(".css-9xm6po", "JuanPedro")
+    await page.click(".css-f58z5q")
+
+    await page.wait_for_selector(".css-c2hiim")
+    await page.click(".css-f58z5q")
+
+    await page.wait_for_selector(".css-1n3hg2q")
+    await page.click('label[for="1"]')
+    await page.click(".css-f58z5q")
+    
+    await page.wait_for_selector(".css-owa58g")
+    await page.click(".css-owa58g")  
+
+    await page.wait_for_selector('button[data-label="dashboard-subscriptions-card-button"]')
+    await page.click('button[data-label="dashboard-subscriptions-card-button"]')
+
+    await page.click(".css-f58z5q")
+
+    clave_locator = page.locator(
+        'div[data-label="license-detail-license-key"] p'
+    )
+
+    await clave_locator.wait_for()
+    clave = await clave_locator.inner_text()
+
+    print(clave)
+
+
+

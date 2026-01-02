@@ -5,6 +5,7 @@ import asyncio
 from playwright.async_api import async_playwright
 
 BASE_URL = "https://api.mail.tm"
+confirmado_event = asyncio.Event()
 
 
 def crear_email_temporal(username, password):
@@ -34,7 +35,7 @@ async def confirmar_cuenta(token):
     headers = {"Authorization": f"Bearer {token}"}
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         while True:
@@ -59,10 +60,10 @@ async def confirmar_cuenta(token):
                     await page.goto(url)
                     await page.wait_for_load_state("load")
 
-
                     print("Cuenta confirmada")
+                    confirmado_event.set() 
                     break
 
             await asyncio.sleep(2)
 
-        await asyncio.sleep(9999)
+        await asyncio.sleep(2)
