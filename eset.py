@@ -31,7 +31,7 @@ def generar_password():
 
 async def registrar_cuenta(email, password):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         await page.goto("https://login.eset.com/register")
